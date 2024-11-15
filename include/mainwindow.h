@@ -8,26 +8,35 @@
 #include <QMainWindow>
 #include <QSize>
 #include <QPoint>
+#include <QPushButton>
 
+// forward declarations
+class Vertex;
 class Canvas;
 
+const int MAX_VERTICES = 128;
 
 class MainWindow : public QMainWindow {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    MainWindow(QWidget* parent = nullptr);
-    ~MainWindow();
+	MainWindow(QWidget* parent = nullptr);
 
 protected:
-    void resizeEvent(QResizeEvent* event);
+
+	void resizeEvent(QResizeEvent* event);
+	void handleToggle(bool checked);
 
 private slots:
-    void handleNewVertex(const QPoint& pos);
+	void handleNewVertex(const QPoint& pos);
 
 private:
-    Canvas* canvas;
-    std::vector<Vertex*> vertices;
+	Canvas* canvas;
+
+	std::vector<Vertex*> vertices;
+	std::vector<std::vector<int>> adjacencyMatrix;
+
+	bool edgeMode = false;
 };
 
 #endif // MAINWINDOW_H
