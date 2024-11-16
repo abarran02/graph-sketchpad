@@ -8,7 +8,8 @@
 #include <QMouseEvent>
 #include <QPoint>
 
-class Canvas : public QWidget {
+class Canvas : public QWidget
+{
 	Q_OBJECT
 
 public:
@@ -16,7 +17,9 @@ public:
 		: QWidget(parent), vertices(vertices), adjacencyMatrix(adjacencyMatrix) {
 	}
 
+	void paintEvent(QPaintEvent* event) override;
 	bool edgeMode = false;
+	bool deleteMode = false;
 
 signals:
 	void newVertex(const QPoint& pos);
@@ -31,6 +34,9 @@ private:
 
 	void setCurrentVertex(Vertex* v, int idx);
 	void setLastVertex(Vertex* v, int idx);
+
+	void handleDeleteVertex(int vertexIdx);
+	void handleVertexAction(int vertexIdx, const QPoint& pos);
 
 	QPoint dragStartPos;
 	Vertex* currentVertex = nullptr;

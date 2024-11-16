@@ -3,9 +3,7 @@
 
 #include <QWidget>
 #include <QPaintEvent>
-#include <QMouseEvent>
 #include <QPainter>
-#include <QSize>
 
 class Vertex : public QWidget {
 	Q_OBJECT
