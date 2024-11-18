@@ -14,6 +14,8 @@
 class Vertex;
 class Canvas;
 
+#include <QVBoxLayout>
+
 const int MAX_VERTICES = 128;
 
 class MainWindow : public QMainWindow {
@@ -23,9 +25,9 @@ public:
 	MainWindow(QWidget* parent = nullptr);
 
 protected:
-
 	void resizeEvent(QResizeEvent* event);
-	void handleToggle(bool checked);
+	void edgeToggle(bool checked);
+	void deleteToggle(bool checked);
 
 private slots:
 	void handleNewVertex(const QPoint& pos);
@@ -37,6 +39,7 @@ private:
 	std::vector<std::vector<int>> adjacencyMatrix;
 
 	bool edgeMode = false;
+	bool deleteMode = false;
 };
 
 #endif // MAINWINDOW_H

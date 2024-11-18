@@ -3,21 +3,47 @@
 MainWindow::MainWindow(QWidget* parent)
 	: QMainWindow(parent), adjacencyMatrix(MAX_VERTICES, std::vector<int>(MAX_VERTICES, 0))
 {
-	// create central widget
+	// Create central widget
+	QWidget* centralWidget = new QWidget(this);
+	setCentralWidget(centralWidget);
+
+	// Create canvas
 	canvas = new Canvas(this, vertices, adjacencyMatrix);
-	setCentralWidget(canvas);
+	canvas->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+	// button column layout
+	QVBoxLayout* buttonLayout = new QVBoxLayout();
+	// edge toggle button
+	QPushButton* edgeButton = new QPushButton("Edge Mode", this);
+	edgeButton->setCheckable(true);
+	connect(edgeButton, &QPushButton::toggled, this, &MainWindow::edgeToggle);
+	buttonLayout->addWidget(edgeButton);
+
+	// delete toggle button
+	QPushButton* deleteButton = new QPushButton("Delete Mode", this);
+	deleteButton->setCheckable(true);
+	connect(deleteButton, &QPushButton::toggled, this, &MainWindow::deleteToggle);
+	buttonLayout->addWidget(deleteButton);
+
+	// push buttons to top
+	buttonLayout->addStretch();
+
+	// button column, max width 200px
+	QWidget* buttonColumn = new QWidget(this);
+	buttonColumn->setLayout(buttonLayout);
+	buttonColumn->setFixedWidth(200);
+
+	QHBoxLayout* mainLayout = new QHBoxLayout(centralWidget);
+	mainLayout->addWidget(buttonColumn);
+	mainLayout->addWidget(canvas);
 
 	resize(1280, 720);
 	connect(canvas, &Canvas::newVertex, this, &MainWindow::handleNewVertex);
-
-	QPushButton* toggleButton = new QPushButton("Edge Mode", this);
-	toggleButton->setCheckable(true);
-	connect(toggleButton, &QPushButton::toggled, this, &MainWindow::handleToggle);
 }
 
 void MainWindow::resizeEvent(QResizeEvent* event)
 {
-	QSize newSize = event->size();
+	QSize newSize = canvas->size();
 
 	for (Vertex* v : vertices) {
 		v->setMinimumSize(newSize);
@@ -36,8 +62,14 @@ void MainWindow::handleNewVertex(const QPoint& pos)
 	}
 }
 
-void MainWindow::handleToggle(bool checked)
+void MainWindow::edgeToggle(bool checked)
 {
 	edgeMode = checked;
 	canvas->edgeMode = checked;
+}
+
+void MainWindow::deleteToggle(bool checked)
+{
+	deleteMode = checked;
+	canvas->deleteMode = checked;
 }
