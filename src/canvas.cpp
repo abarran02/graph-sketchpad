@@ -24,14 +24,14 @@ void Canvas::mousePressEvent(QMouseEvent* event)
 	int vertexIdx = findVertexUnderMouse(event->pos());
 
 	if (vertexIdx != -1) {
-		if (deleteMode) {
+		if (currentMode == del) {
 			handleDeleteVertex(vertexIdx);
 		}
 		else {
 			handleVertexAction(vertexIdx, event->pos());
 		}
 	}
-	else if (!edgeMode) {
+	else if (currentMode == basic && vertices.size() < MAX_VERTICES) {
 		// Create a new vertex if it's not in edge mode
 		setCurrentVertex(nullptr, -1);
 		emit newVertex(event->pos());
@@ -40,7 +40,7 @@ void Canvas::mousePressEvent(QMouseEvent* event)
 
 void Canvas::mouseMoveEvent(QMouseEvent* event)
 {
-	if (!edgeMode && currentVertex) {
+	if (currentMode == basic && currentVertex) {
 		QPoint newTopLeft = event->pos() - dragStartPos;
 		currentVertex->circleRect.moveTopLeft(newTopLeft);
 		currentVertex->update();
@@ -68,14 +68,29 @@ void Canvas::setLastVertex(Vertex* v, int idx)
 	lastVertexIdx = idx;
 }
 
-void Canvas::handleDeleteVertex(int vertexIdx) {
-	delete vertices[vertexIdx];  // calls the destructor of Vertex to clear paint
-	vertices.erase(vertices.begin() + vertexIdx);  // remove from vertices vector
-	std::fill(adjacencyMatrix[vertexIdx].begin(), adjacencyMatrix[vertexIdx].end(), 0);  // remove edge row
+void Canvas::setMode(Mode mode) {
+	currentMode = mode;
+}
 
-	// remove edge column
+void Canvas::handleDeleteVertex(int vertexIdx) {
+	// delete vertex and remove from vertices vector
+	delete vertices[vertexIdx];
+	vertices.erase(vertices.begin() + vertexIdx);
+
+	// shift rows up
+	for (int i = vertexIdx; i < adjacencyMatrix.size() - 1; ++i) {
+		adjacencyMatrix[i] = adjacencyMatrix[i + 1];
+	}
+
+	// maintain matrix size at MAX_VERTICES
+	adjacencyMatrix.back() = std::vector<int>(adjacencyMatrix.size(), 0);
+
+	// shift columns left
 	for (auto& row : adjacencyMatrix) {
-		row[vertexIdx] = 0;
+		for (int j = vertexIdx; j < row.size() - 1; ++j) {
+			row[j] = row[j + 1];
+		}
+		row.back() = 0;  // set the last column to zero
 	}
 }
 
@@ -84,7 +99,7 @@ void Canvas::handleVertexAction(int vertexIdx, const QPoint& pos) {
 	setLastVertex(currentVertex, currentVertexIdx);
 	setCurrentVertex(vertices[vertexIdx], vertexIdx);
 
-	if (edgeMode && lastVertex) {
+	if (currentMode == edge && lastVertex) {
 		adjacencyMatrix[lastVertexIdx][currentVertexIdx] = 1;
 		adjacencyMatrix[currentVertexIdx][lastVertexIdx] = 1;
 		setLastVertex(nullptr, -1);

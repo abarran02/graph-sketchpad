@@ -11,31 +11,31 @@ MainWindow::MainWindow(QWidget* parent)
 	canvas = new Canvas(this, vertices, adjacencyMatrix);
 	canvas->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-	// button column layout
 	QVBoxLayout* buttonLayout = new QVBoxLayout();
-	// edge toggle button
-	QPushButton* edgeButton = new QPushButton("Edge Mode", this);
-	edgeButton->setCheckable(true);
-	connect(edgeButton, &QPushButton::toggled, this, &MainWindow::edgeToggle);
-	buttonLayout->addWidget(edgeButton);
+	QButtonGroup* modeGroup = new QButtonGroup(this);
 
-	// delete toggle button
-	QPushButton* deleteButton = new QPushButton("Delete Mode", this);
-	deleteButton->setCheckable(true);
-	connect(deleteButton, &QPushButton::toggled, this, &MainWindow::deleteToggle);
-	buttonLayout->addWidget(deleteButton);
+	addModeButton("Basic Mode", basic, modeGroup, buttonLayout);
+	addModeButton("Edge Mode", edge, modeGroup, buttonLayout);
+	addModeButton("Delete Mode", del, modeGroup, buttonLayout);
 
-	// push buttons to top
+	// Push buttons to top
 	buttonLayout->addStretch();
 
-	// button column, max width 200px
+	// Button column, max width 200px
 	QWidget* buttonColumn = new QWidget(this);
 	buttonColumn->setLayout(buttonLayout);
 	buttonColumn->setFixedWidth(200);
 
+	// Main layout
 	QHBoxLayout* mainLayout = new QHBoxLayout(centralWidget);
 	mainLayout->addWidget(buttonColumn);
 	mainLayout->addWidget(canvas);
+
+	// Connect button group to mode toggle handler
+	connect(modeGroup, &QButtonGroup::idClicked, this, &MainWindow::changeMode);
+
+	// Set initial mode
+	modeGroup->button(Mode::basic)->setChecked(true);  // Assuming basic mode is default
 
 	resize(1280, 720);
 	connect(canvas, &Canvas::newVertex, this, &MainWindow::handleNewVertex);
@@ -54,7 +54,7 @@ void MainWindow::resizeEvent(QResizeEvent* event)
 
 void MainWindow::handleNewVertex(const QPoint& pos)
 {
-	if (!edgeMode) {
+	if (currentMode == basic) {
 		Vertex* v = new Vertex(canvas, QRect(pos.x() - 25, pos.y() - 25, 50, 50));
 		v->show();
 
@@ -62,14 +62,14 @@ void MainWindow::handleNewVertex(const QPoint& pos)
 	}
 }
 
-void MainWindow::edgeToggle(bool checked)
-{
-	edgeMode = checked;
-	canvas->edgeMode = checked;
+void MainWindow::changeMode(int mode) {
+	currentMode = static_cast<Mode>(mode);
+	canvas->setMode(currentMode);
 }
 
-void MainWindow::deleteToggle(bool checked)
-{
-	deleteMode = checked;
-	canvas->deleteMode = checked;
+void MainWindow::addModeButton(const QString& text, Mode mode, QButtonGroup* modeGroup, QVBoxLayout* buttonLayout) {
+	QPushButton* button = new QPushButton(text, this);
+	button->setCheckable(true);
+	modeGroup->addButton(button, mode);
+	buttonLayout->addWidget(button);
 }

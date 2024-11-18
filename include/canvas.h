@@ -2,7 +2,7 @@
 #define CANVAS_H
 
 #include "vertex.h"
-#include "mainwindow.h"
+#include "mode.h"
 
 #include <QWidget>
 #include <QMouseEvent>
@@ -18,15 +18,13 @@ public:
 	}
 
 	void paintEvent(QPaintEvent* event) override;
-	bool edgeMode = false;
-	bool deleteMode = false;
+	void setMode(Mode mode);
 
 signals:
 	void newVertex(const QPoint& pos);
 
 protected:
 	void mousePressEvent(QMouseEvent* event) override;
-	//void mouseReleaseEvent(QMouseEvent* event) override;
 	void mouseMoveEvent(QMouseEvent* event) override;
 
 private:
@@ -44,6 +42,7 @@ private:
 	Vertex* lastVertex = nullptr;
 	int lastVertexIdx = -1;
 
+	Mode currentMode = basic;
 	std::vector<Vertex*>& vertices;  // this is awful and I am sorry
 	std::vector<std::vector<int>>& adjacencyMatrix;
 };
