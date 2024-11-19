@@ -1,12 +1,16 @@
 #ifndef CANVAS_H
 #define CANVAS_H
 
-#include "vertex.h"
+#include "edge.h"
 #include "mode.h"
+#include "vertex.h"
 
+#include <algorithm>
 #include <QWidget>
 #include <QMouseEvent>
 #include <QPoint>
+
+const int LINE_WIDTH = 8;
 
 class Canvas : public QWidget
 {
@@ -36,6 +40,8 @@ private:
 	void handleDeleteVertex(int vertexIdx);
 	void handleVertexAction(int vertexIdx, const QPoint& pos);
 
+	int getVertexIdx(Vertex* vertex);
+
 	QPoint dragStartPos;
 	Vertex* currentVertex = nullptr;
 	int currentVertexIdx = -1;
@@ -44,6 +50,7 @@ private:
 
 	Mode currentMode = basic;
 	std::vector<Vertex*>& vertices;  // this is awful and I am sorry
+	std::vector<Edge*> edges;  // tracks edges for mouse interaction
 	std::vector<std::vector<int>>& adjacencyMatrix;
 };
 

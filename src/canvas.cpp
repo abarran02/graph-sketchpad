@@ -4,7 +4,7 @@ void Canvas::paintEvent(QPaintEvent* event)
 {
 	QPainter painter(this);
 	painter.setRenderHint(QPainter::Antialiasing);
-	painter.setPen(QPen(Qt::red, 5, Qt::SolidLine, Qt::RoundCap));
+	painter.setPen(QPen(Qt::red, LINE_WIDTH, Qt::SolidLine, Qt::RoundCap));
 
 	// iterate over vertices to find edges to draw
 	for (int vertex = 0; vertex < MAX_VERTICES; vertex++) {
@@ -35,6 +35,23 @@ void Canvas::mousePressEvent(QMouseEvent* event)
 		// Create a new vertex if it's not in edge mode
 		setCurrentVertex(nullptr, -1);
 		emit newVertex(event->pos());
+	}
+	else if (currentMode == del) {
+		for (auto it = edges.begin(); it != edges.end();) {
+			if ((*it)->contains(event->pos(), LINE_WIDTH)) {
+				int fromIdx = getVertexIdx((*it)->from);
+				int toIdx = getVertexIdx((*it)->to);
+
+				adjacencyMatrix[fromIdx][toIdx] = 0;
+				adjacencyMatrix[toIdx][fromIdx] = 0;
+
+				it = edges.erase(it);
+				this->update();
+			}
+			else {
+				++it;
+			}
+		}
 	}
 }
 
@@ -73,10 +90,6 @@ void Canvas::setMode(Mode mode) {
 }
 
 void Canvas::handleDeleteVertex(int vertexIdx) {
-	// delete vertex and remove from vertices vector
-	delete vertices[vertexIdx];
-	vertices.erase(vertices.begin() + vertexIdx);
-
 	// shift rows up
 	for (int i = vertexIdx; i < adjacencyMatrix.size() - 1; ++i) {
 		adjacencyMatrix[i] = adjacencyMatrix[i + 1];
@@ -92,6 +105,20 @@ void Canvas::handleDeleteVertex(int vertexIdx) {
 		}
 		row.back() = 0;  // set the last column to zero
 	}
+
+	// remove edge objects
+	for (auto it = edges.begin(); it != edges.end();) {
+		if ((*it)->from == vertices[vertexIdx] || (*it)->to == vertices[vertexIdx]) {
+			it = edges.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
+
+	// delete vertex and remove from vertices vector
+	delete vertices[vertexIdx];
+	vertices.erase(vertices.begin() + vertexIdx);
 }
 
 // Handle actions when clicking on a vertex
@@ -102,11 +129,25 @@ void Canvas::handleVertexAction(int vertexIdx, const QPoint& pos) {
 	if (currentMode == edge && lastVertex) {
 		adjacencyMatrix[lastVertexIdx][currentVertexIdx] = 1;
 		adjacencyMatrix[currentVertexIdx][lastVertexIdx] = 1;
+
+		Edge* newEdge = new Edge(this, lastVertex, currentVertex);
+		edges.push_back(newEdge);
+		
 		setLastVertex(nullptr, -1);
 		setCurrentVertex(nullptr, -1);
 		this->update();
 	}
 	else {
 		dragStartPos = pos - currentVertex->circleRect.topLeft();
+	}
+}
+
+int Canvas::getVertexIdx(Vertex* vertex) {
+	auto it = std::find(vertices.begin(), vertices.end(), vertex);
+	if (it != vertices.end()) {
+		return std::distance(vertices.begin(), it);
+	}
+	else {
+		return -1;
 	}
 }
