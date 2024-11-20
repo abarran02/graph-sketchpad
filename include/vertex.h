@@ -17,6 +17,9 @@ public:
 	void paintEvent(QPaintEvent* event) override;
 
 	QRect circleRect;
+
+	bool highlighted = false;
+	Qt::GlobalColor color = Qt::gray;
 };
 
 #endif

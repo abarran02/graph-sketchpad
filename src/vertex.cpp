@@ -5,7 +5,13 @@ void Vertex::paintEvent(QPaintEvent* event)
 	QPainter painter(this);
 	painter.setRenderHint(QPainter::Antialiasing);
 
+	if (highlighted) {
+		painter.setBrush(Qt::yellow);
+	}
+	else {
+		painter.setBrush(color);
+	}
+
 	// Ensure the entire circle's bounding area is updated, preventing clipping
-	painter.setBrush(Qt::gray);
 	painter.drawEllipse(circleRect.adjusted(-1, -1, 1, 1));
 }

@@ -18,6 +18,8 @@ public:
 
 	Vertex* from;
 	Vertex* to;
+
+	int multiplicity = 1;
 };
 
 #endif

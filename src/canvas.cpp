@@ -4,7 +4,6 @@ void Canvas::paintEvent(QPaintEvent* event)
 {
 	QPainter painter(this);
 	painter.setRenderHint(QPainter::Antialiasing);
-	painter.setPen(QPen(Qt::red, LINE_WIDTH, Qt::SolidLine, Qt::RoundCap));
 
 	// iterate over vertices to find edges to draw
 	for (int vertex = 0; vertex < MAX_VERTICES; vertex++) {
@@ -12,8 +11,17 @@ void Canvas::paintEvent(QPaintEvent* event)
 			if (adjacencyMatrix[vertex][edge]) {
 				Vertex* from = vertices[vertex];
 				Vertex* to = vertices[edge];
+				Edge* e = findMatchingEdge(from, to);
 
-				painter.drawLine(from->circleRect.center(), to->circleRect.center());
+				painter.setPen(QPen(Qt::red, LINE_WIDTH * e->multiplicity, Qt::SolidLine, Qt::RoundCap));
+
+				if (from == to) {
+					// loop
+					painter.drawEllipse(to->circleRect.center().x() - 50, to->circleRect.center().y() - 50, 50, 50);
+				}
+				else {
+					painter.drawLine(from->circleRect.center(), to->circleRect.center());
+				}
 			}
 		}
 	}
@@ -38,7 +46,7 @@ void Canvas::mousePressEvent(QMouseEvent* event)
 	}
 	else if (currentMode == del) {
 		for (auto it = edges.begin(); it != edges.end();) {
-			if ((*it)->contains(event->pos(), LINE_WIDTH)) {
+			if ((*it)->contains(event->pos(), LINE_WIDTH * (*it)->multiplicity)) {
 				int fromIdx = getVertexIdx((*it)->from);
 				int toIdx = getVertexIdx((*it)->to);
 
@@ -75,8 +83,18 @@ int Canvas::findVertexUnderMouse(const QPoint& pos)
 
 void Canvas::setCurrentVertex(Vertex* v, int idx)
 {
+	// reset old vertex highlight
+	if (currentVertex)
+		currentVertex->highlighted = false;
+
 	currentVertex = v;
 	currentVertexIdx = idx;
+
+	// set new vertex highlight
+	if (currentVertex) {
+		currentVertex->highlighted = true;
+		currentVertex->update();
+	}
 }
 
 void Canvas::setLastVertex(Vertex* v, int idx)
@@ -89,7 +107,8 @@ void Canvas::setMode(Mode mode) {
 	currentMode = mode;
 }
 
-void Canvas::handleDeleteVertex(int vertexIdx) {
+void Canvas::handleDeleteVertex(int vertexIdx)
+{
 	// shift rows up
 	for (int i = vertexIdx; i < adjacencyMatrix.size() - 1; ++i) {
 		adjacencyMatrix[i] = adjacencyMatrix[i + 1];
@@ -117,22 +136,44 @@ void Canvas::handleDeleteVertex(int vertexIdx) {
 	}
 
 	// delete vertex and remove from vertices vector
+	if (vertices[vertexIdx]->highlighted)
+		setCurrentVertex(nullptr, -1);
 	delete vertices[vertexIdx];
 	vertices.erase(vertices.begin() + vertexIdx);
 }
 
-// Handle actions when clicking on a vertex
-void Canvas::handleVertexAction(int vertexIdx, const QPoint& pos) {
+Edge* Canvas::findMatchingEdge(Vertex* v1, Vertex* v2)
+{
+	for (auto it = edges.begin(); it != edges.end(); ++it) {
+		if (((*it)->from == v1 && (*it)->to == v2)
+			|| ((*it)->to == v1 && (*it)->from == v2)) {
+			return (*it);
+		}
+	}
+}
+
+void Canvas::handleVertexAction(int vertexIdx, const QPoint& pos)
+{
 	setLastVertex(currentVertex, currentVertexIdx);
 	setCurrentVertex(vertices[vertexIdx], vertexIdx);
 
 	if (currentMode == edge && lastVertex) {
-		adjacencyMatrix[lastVertexIdx][currentVertexIdx] = 1;
-		adjacencyMatrix[currentVertexIdx][lastVertexIdx] = 1;
+		Edge* e;
 
-		Edge* newEdge = new Edge(this, lastVertex, currentVertex);
-		edges.push_back(newEdge);
-		
+		// parallel edge
+		if (adjacencyMatrix[lastVertexIdx][currentVertexIdx] == 1) {
+			e = findMatchingEdge(currentVertex, lastVertex);
+			e->multiplicity++;
+		}
+		// new edge
+		else {
+			adjacencyMatrix[lastVertexIdx][currentVertexIdx] = 1;
+			adjacencyMatrix[currentVertexIdx][lastVertexIdx] = 1;
+
+			e = new Edge(this, lastVertex, currentVertex);
+			edges.push_back(e);
+		}
+
 		setLastVertex(nullptr, -1);
 		setCurrentVertex(nullptr, -1);
 		this->update();
@@ -142,7 +183,8 @@ void Canvas::handleVertexAction(int vertexIdx, const QPoint& pos) {
 	}
 }
 
-int Canvas::getVertexIdx(Vertex* vertex) {
+int Canvas::getVertexIdx(Vertex* vertex)
+{
 	auto it = std::find(vertices.begin(), vertices.end(), vertex);
 	if (it != vertices.end()) {
 		return std::distance(vertices.begin(), it);

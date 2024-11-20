@@ -10,7 +10,7 @@
 #include <QMouseEvent>
 #include <QPoint>
 
-const int LINE_WIDTH = 8;
+const int LINE_WIDTH = 4;
 
 class Canvas : public QWidget
 {
@@ -36,6 +36,8 @@ private:
 
 	void setCurrentVertex(Vertex* v, int idx);
 	void setLastVertex(Vertex* v, int idx);
+
+	Edge* findMatchingEdge(Vertex* v1, Vertex* v2);
 
 	void handleDeleteVertex(int vertexIdx);
 	void handleVertexAction(int vertexIdx, const QPoint& pos);
