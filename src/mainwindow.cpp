@@ -17,6 +17,16 @@ MainWindow::MainWindow(QWidget* parent)
 	addModeButton("Basic Mode", basic, modeGroup, buttonLayout);
 	addModeButton("Edge Mode", edge, modeGroup, buttonLayout);
 	addModeButton("Delete Mode", del, modeGroup, buttonLayout);
+	addModeButton("Color Mode", color, modeGroup, buttonLayout);
+
+	// color selection
+	QLabel* label = new QLabel("Select a color:");
+	colorBox = new QComboBox();
+	addColors();
+	colorBox->setDisabled(true);
+	connect(colorBox, &QComboBox::currentTextChanged, canvas, &Canvas::setColor);
+	buttonLayout->addWidget(label);
+	buttonLayout->addWidget(colorBox);
 
 	// Push buttons to top
 	buttonLayout->addStretch();
@@ -65,6 +75,13 @@ void MainWindow::handleNewVertex(const QPoint& pos)
 void MainWindow::changeMode(int mode) {
 	currentMode = static_cast<Mode>(mode);
 	canvas->setMode(currentMode);
+
+	if (mode == color) {
+		colorBox->setDisabled(false);
+	}
+	else {
+		colorBox->setDisabled(true);
+	}
 }
 
 void MainWindow::addModeButton(const QString& text, Mode mode, QButtonGroup* modeGroup, QVBoxLayout* buttonLayout) {
@@ -72,4 +89,26 @@ void MainWindow::addModeButton(const QString& text, Mode mode, QButtonGroup* mod
 	button->setCheckable(true);
 	modeGroup->addButton(button, mode);
 	buttonLayout->addWidget(button);
+}
+
+void MainWindow::addColors() {
+	struct ColorItem {
+		const char* name;
+		QColor color;
+	} colorConstants[] = {
+		{"Gray", QColorConstants::Gray},
+		{"White", QColorConstants::White},
+		{"Black", QColorConstants::Black},
+		{"Red", QColorConstants::Red},
+		{"Green", QColorConstants::Green},
+		{"Blue", QColorConstants::Blue},
+		{"Cyan", QColorConstants::Cyan},
+		{"Magenta", QColorConstants::Magenta},
+		//{"Yellow", QColorConstants::Yellow},  // already used as highlighed vertex color
+		{"Orange", QColorConstants::Svg::orange}
+	};
+
+	for (const auto& colorItem : colorConstants) {
+		colorBox->addItem(colorItem.name, colorItem.color);
+	}
 }

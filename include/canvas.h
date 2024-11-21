@@ -6,6 +6,7 @@
 #include "vertex.h"
 
 #include <algorithm>
+#include <QColor>
 #include <QWidget>
 #include <QMouseEvent>
 #include <QPoint>
@@ -23,6 +24,7 @@ public:
 
 	void paintEvent(QPaintEvent* event) override;
 	void setMode(Mode mode);
+	void setColor(QColor color);
 
 signals:
 	void newVertex(const QPoint& pos);
@@ -50,6 +52,7 @@ private:
 	Vertex* lastVertex = nullptr;
 	int lastVertexIdx = -1;
 
+	QColor currentColor = Qt::gray;
 	Mode currentMode = basic;
 	std::vector<Vertex*>& vertices;  // this is awful and I am sorry
 	std::vector<Edge*> edges;  // tracks edges for mouse interaction

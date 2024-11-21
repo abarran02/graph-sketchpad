@@ -40,26 +40,33 @@ void Canvas::mousePressEvent(QMouseEvent* event)
 		}
 	}
 	else if (currentMode == basic && vertices.size() < MAX_VERTICES) {
-		// Create a new vertex if it's not in edge mode
+		// create new vertex if not edge mode
 		setCurrentVertex(nullptr, -1);
 		emit newVertex(event->pos());
 	}
 	else if (currentMode == del) {
+		// iterate over edges
 		for (auto it = edges.begin(); it != edges.end();) {
+			// discover edge containing click
 			if ((*it)->contains(event->pos(), LINE_WIDTH * (*it)->multiplicity)) {
 				int fromIdx = getVertexIdx((*it)->from);
 				int toIdx = getVertexIdx((*it)->to);
 
+				// remove edge from adjacency matrix and edge vector
 				adjacencyMatrix[fromIdx][toIdx] = 0;
 				adjacencyMatrix[toIdx][fromIdx] = 0;
 
 				it = edges.erase(it);
 				this->update();
+				break;
 			}
 			else {
 				++it;
 			}
 		}
+	}
+	else if (currentMode == edge) {
+		setCurrentVertex(nullptr, -1);
 	}
 }
 
@@ -84,8 +91,10 @@ int Canvas::findVertexUnderMouse(const QPoint& pos)
 void Canvas::setCurrentVertex(Vertex* v, int idx)
 {
 	// reset old vertex highlight
-	if (currentVertex)
+	if (currentVertex) {
 		currentVertex->highlighted = false;
+		currentVertex->update();
+	}
 
 	currentVertex = v;
 	currentVertexIdx = idx;
@@ -105,6 +114,10 @@ void Canvas::setLastVertex(Vertex* v, int idx)
 
 void Canvas::setMode(Mode mode) {
 	currentMode = mode;
+}
+
+void Canvas::setColor(QColor color) {
+	currentColor = color;
 }
 
 void Canvas::handleDeleteVertex(int vertexIdx)
@@ -177,6 +190,10 @@ void Canvas::handleVertexAction(int vertexIdx, const QPoint& pos)
 		setLastVertex(nullptr, -1);
 		setCurrentVertex(nullptr, -1);
 		this->update();
+	}
+	else if (currentMode == color) {
+		currentVertex->color = currentColor;
+		setCurrentVertex(nullptr, -1);
 	}
 	else {
 		dragStartPos = pos - currentVertex->circleRect.topLeft();

@@ -1,6 +1,7 @@
 #ifndef VERTEX_H
 #define VERTEX_H
 
+#include <QColor>
 #include <QWidget>
 #include <QPaintEvent>
 #include <QPainter>
@@ -19,7 +20,7 @@ public:
 	QRect circleRect;
 
 	bool highlighted = false;
-	Qt::GlobalColor color = Qt::gray;
+	QColor color = Qt::gray;
 };
 
 #endif

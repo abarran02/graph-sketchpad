@@ -6,6 +6,9 @@
 #include "mode.h"
 
 #include <vector>
+#include <QColor>
+#include <QComboBox>
+#include <QLabel>
 #include <QMainWindow>
 #include <QSize>
 #include <QPoint>
@@ -34,7 +37,9 @@ private slots:
 
 private:
 	void addModeButton(const QString& text, Mode mode, QButtonGroup* modeGroup, QVBoxLayout* buttonLayout);
+	void addColors();
 	Canvas* canvas;
+	QComboBox* colorBox;
 
 	std::vector<Vertex*> vertices;
 	std::vector<std::vector<int>> adjacencyMatrix;
