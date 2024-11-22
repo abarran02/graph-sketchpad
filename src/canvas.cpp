@@ -5,24 +5,15 @@ void Canvas::paintEvent(QPaintEvent* event)
 	QPainter painter(this);
 	painter.setRenderHint(QPainter::Antialiasing);
 
-	// iterate over vertices to find edges to draw
-	for (int vertex = 0; vertex < MAX_VERTICES; vertex++) {
-		for (int edge = 0; edge < MAX_VERTICES; edge++) {
-			if (adjacencyMatrix[vertex][edge]) {
-				Vertex* from = vertices[vertex];
-				Vertex* to = vertices[edge];
-				Edge* e = findMatchingEdge(from, to);
+	for (Edge* e : edges) {
+		painter.setPen(QPen(Qt::red, LINE_WIDTH * e->multiplicity, Qt::SolidLine, Qt::RoundCap));
 
-				painter.setPen(QPen(Qt::red, LINE_WIDTH * e->multiplicity, Qt::SolidLine, Qt::RoundCap));
-
-				if (from == to) {
-					// loop
-					painter.drawEllipse(to->circleRect.center().x() - 50, to->circleRect.center().y() - 50, 50, 50);
-				}
-				else {
-					painter.drawLine(from->circleRect.center(), to->circleRect.center());
-				}
-			}
+		if (e->from == e->to) {
+			// loop
+			painter.drawEllipse(e->to->circleRect.center().x() - 50, e->to->circleRect.center().y() - 50, 50, 50);
+		}
+		else {
+			painter.drawLine(e->from->circleRect.center(), e->to->circleRect.center());
 		}
 	}
 }
@@ -52,9 +43,12 @@ void Canvas::mousePressEvent(QMouseEvent* event)
 				int fromIdx = getVertexIdx((*it)->from);
 				int toIdx = getVertexIdx((*it)->to);
 
-				// remove edge from adjacency matrix and edge vector
+				// remove edge from adjacency matrix, degree matrix, and edge vector
 				adjacencyMatrix[fromIdx][toIdx] = 0;
 				adjacencyMatrix[toIdx][fromIdx] = 0;
+
+				degreeMatrix[fromIdx][fromIdx]--;
+				degreeMatrix[toIdx][toIdx]--;
 
 				it = edges.erase(it);
 				this->update();
@@ -120,27 +114,36 @@ void Canvas::setColor(QColor color) {
 	currentColor = color;
 }
 
-void Canvas::handleDeleteVertex(int vertexIdx)
-{
+void Canvas::removeVectorRowCol(std::vector<std::vector<int>>& matrix, int removeIdx) {
 	// shift rows up
-	for (int i = vertexIdx; i < adjacencyMatrix.size() - 1; ++i) {
-		adjacencyMatrix[i] = adjacencyMatrix[i + 1];
+	for (int i = removeIdx; i < matrix.size() - 1; ++i) {
+		matrix[i] = matrix[i + 1];
 	}
 
 	// maintain matrix size at MAX_VERTICES
-	adjacencyMatrix.back() = std::vector<int>(adjacencyMatrix.size(), 0);
+	matrix.back() = std::vector<int>(matrix.size(), 0);
 
 	// shift columns left
-	for (auto& row : adjacencyMatrix) {
-		for (int j = vertexIdx; j < row.size() - 1; ++j) {
+	for (auto& row : matrix) {
+		for (int j = removeIdx; j < row.size() - 1; ++j) {
 			row[j] = row[j + 1];
 		}
 		row.back() = 0;  // set the last column to zero
 	}
+}
 
+void Canvas::handleDeleteVertex(int vertexIdx)
+{
 	// remove edge objects
 	for (auto it = edges.begin(); it != edges.end();) {
-		if ((*it)->from == vertices[vertexIdx] || (*it)->to == vertices[vertexIdx]) {
+		if ((*it)->from == vertices[vertexIdx]) {
+			int adjIdx = getVertexIdx((*it)->to);
+			degreeMatrix[adjIdx][adjIdx]--;  // decrement degrees of adjacent edges
+			it = edges.erase(it);
+		}
+		else if ((*it)->to == vertices[vertexIdx]) {
+			int adjIdx = getVertexIdx((*it)->from);
+			degreeMatrix[adjIdx][adjIdx]--;
 			it = edges.erase(it);
 		}
 		else {
@@ -148,8 +151,12 @@ void Canvas::handleDeleteVertex(int vertexIdx)
 		}
 	}
 
+	// remove vertex from adjacency and degree matrices
+	removeVectorRowCol(adjacencyMatrix, vertexIdx);
+	removeVectorRowCol(degreeMatrix, vertexIdx);
+
 	// delete vertex and remove from vertices vector
-	if (vertices[vertexIdx]->highlighted)
+	if (vertices[vertexIdx]->highlighted)  // was the current vertex
 		setCurrentVertex(nullptr, -1);
 	delete vertices[vertexIdx];
 	vertices.erase(vertices.begin() + vertexIdx);
@@ -186,6 +193,11 @@ void Canvas::handleVertexAction(int vertexIdx, const QPoint& pos)
 			e = new Edge(this, lastVertex, currentVertex);
 			edges.push_back(e);
 		}
+
+		// increment degree of both vertices
+		degreeMatrix[currentVertexIdx][currentVertexIdx]++;
+		if (currentVertexIdx != lastVertexIdx)  // prevent incrementing by 2 for loops
+			degreeMatrix[lastVertexIdx][lastVertexIdx]++;
 
 		setLastVertex(nullptr, -1);
 		setCurrentVertex(nullptr, -1);

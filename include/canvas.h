@@ -18,9 +18,8 @@ class Canvas : public QWidget
 	Q_OBJECT
 
 public:
-	Canvas(QWidget* parent, std::vector<Vertex*>& vertices, std::vector<std::vector<int>>& adjacencyMatrix)
-		: QWidget(parent), vertices(vertices), adjacencyMatrix(adjacencyMatrix) {
-	}
+	Canvas(QWidget* parent, std::vector<Vertex*>& vertices, std::vector<std::vector<int>>& adjacencyMatrix, std::vector<std::vector<int>>& degreeMatrix)
+		: QWidget(parent), vertices(vertices), adjacencyMatrix(adjacencyMatrix), degreeMatrix(degreeMatrix) {}
 
 	void paintEvent(QPaintEvent* event) override;
 	void setMode(Mode mode);
@@ -41,6 +40,7 @@ private:
 
 	Edge* findMatchingEdge(Vertex* v1, Vertex* v2);
 
+	void removeVectorRowCol(std::vector<std::vector<int>>& matrix, int removeIdx);
 	void handleDeleteVertex(int vertexIdx);
 	void handleVertexAction(int vertexIdx, const QPoint& pos);
 
@@ -57,6 +57,7 @@ private:
 	std::vector<Vertex*>& vertices;  // this is awful and I am sorry
 	std::vector<Edge*> edges;  // tracks edges for mouse interaction
 	std::vector<std::vector<int>>& adjacencyMatrix;
+	std::vector<std::vector<int>>& degreeMatrix;
 };
 
 #endif

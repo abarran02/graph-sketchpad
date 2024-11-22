@@ -1,14 +1,14 @@
 #include "mainwindow.h"
 
-MainWindow::MainWindow(QWidget* parent)
-	: QMainWindow(parent), adjacencyMatrix(MAX_VERTICES, std::vector<int>(MAX_VERTICES, 0))
+MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent),
+	adjacencyMatrix(MAX_VERTICES, std::vector<int>(MAX_VERTICES, 0)), degreeMatrix(MAX_VERTICES, std::vector<int>(MAX_VERTICES, 0))
 {
 	// Create central widget
 	QWidget* centralWidget = new QWidget(this);
 	setCentralWidget(centralWidget);
 
 	// Create canvas
-	canvas = new Canvas(this, vertices, adjacencyMatrix);
+	canvas = new Canvas(this, vertices, adjacencyMatrix, degreeMatrix);
 	canvas->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
 	QVBoxLayout* buttonLayout = new QVBoxLayout();

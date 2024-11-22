@@ -43,6 +43,7 @@ private:
 
 	std::vector<Vertex*> vertices;
 	std::vector<std::vector<int>> adjacencyMatrix;
+	std::vector<std::vector<int>> degreeMatrix;
 
 	Mode currentMode = basic;
 };
