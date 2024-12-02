@@ -1,6 +1,7 @@
 #ifndef EDGE_H
 #define EDGE_H
 
+#include "mode.h"
 #include "vertex.h"
 
 #include <cmath>
@@ -20,6 +21,10 @@ public:
 	Vertex* to;
 
 	int multiplicity = 1;
+
+private:
+	bool checkContainedLine(const QPoint& point, const double width);
+	bool checkContainedLoop(const QPoint& point, const double width);
 };
 
 #endif

@@ -65,7 +65,7 @@ void MainWindow::resizeEvent(QResizeEvent* event)
 void MainWindow::handleNewVertex(const QPoint& pos)
 {
 	if (currentMode == basic && vertices.size() < MAX_VERTICES) {
-		Vertex* v = new Vertex(canvas, QRect(pos.x() - 25, pos.y() - 25, 50, 50));
+		Vertex* v = new Vertex(canvas, QRect(pos.x() - HALF_RADIUS, pos.y() - HALF_RADIUS, VERTEX_RADIUS, VERTEX_RADIUS));
 		v->show();
 
 		vertices.push_back(v);

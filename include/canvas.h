@@ -11,8 +11,6 @@
 #include <QMouseEvent>
 #include <QPoint>
 
-const int LINE_WIDTH = 4;
-
 class Canvas : public QWidget
 {
 	Q_OBJECT
@@ -54,7 +52,7 @@ private:
 
 	QColor currentColor = Qt::gray;
 	Mode currentMode = basic;
-	std::vector<Vertex*>& vertices;  // this is awful and I am sorry
+	std::vector<Vertex*>& vertices;
 	std::vector<Edge*> edges;  // tracks edges for mouse interaction
 	std::vector<std::vector<int>>& adjacencyMatrix;
 	std::vector<std::vector<int>>& degreeMatrix;

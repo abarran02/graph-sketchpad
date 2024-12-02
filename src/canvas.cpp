@@ -10,7 +10,8 @@ void Canvas::paintEvent(QPaintEvent* event)
 
 		if (e->from == e->to) {
 			// loop
-			painter.drawEllipse(e->to->circleRect.center().x() - 50, e->to->circleRect.center().y() - 50, 50, 50);
+			QPoint center(e->to->circleRect.center().x() - HALF_RADIUS, e->to->circleRect.center().y() - HALF_RADIUS);
+			painter.drawEllipse(center, HALF_RADIUS, HALF_RADIUS);
 		}
 		else {
 			painter.drawLine(e->from->circleRect.center(), e->to->circleRect.center());

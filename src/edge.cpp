@@ -1,6 +1,12 @@
 #include "edge.h"
 
-bool Edge::contains(const QPoint& point, double width) {
+bool Edge::contains(const QPoint& point, double width)
+{
+    return checkContainedLine(point, width) || checkContainedLoop(point, width);
+}
+
+bool Edge::checkContainedLine(const QPoint& point, const double width)
+{
     QPoint p1 = from->circleRect.center();
     QPoint p2 = to->circleRect.center();
 
@@ -20,4 +26,22 @@ bool Edge::contains(const QPoint& point, double width) {
 
     // Check if the distance is within the line's width
     return distanceSquared <= std::pow(width / 2.0, 2);
+}
+
+bool Edge::checkContainedLoop(const QPoint& point, const double width)
+{
+    // Find the center of the circle
+    QPoint center(from->circleRect.center().x() - HALF_RADIUS, from->circleRect.center().y() - HALF_RADIUS);
+
+    // Calculate the radii
+    double innerRadius = from->circleRect.width() / 2.0;
+    double outerRadius = innerRadius + width;
+
+    // Calculate the distance from the point to the center
+    double dx = point.x() - center.x();
+    double dy = point.y() - center.y();
+    double distanceSquared = dx * dx + dy * dy;
+
+    // Check if the distance is within the bounds of the circular band
+    return (distanceSquared <= outerRadius * outerRadius) && (distanceSquared >= innerRadius * innerRadius);
 }
