@@ -6,7 +6,7 @@ void Canvas::paintEvent(QPaintEvent* event)
 	painter.setRenderHint(QPainter::Antialiasing);
 
 	for (Edge* e : edges) {
-		painter.setPen(QPen(Qt::red, LINE_WIDTH * e->multiplicity, Qt::SolidLine, Qt::RoundCap));
+		painter.setPen(QPen(Qt::red, LINE_WIDTH, Qt::SolidLine, Qt::RoundCap));
 
 		if (e->from == e->to) {
 			// loop
@@ -15,8 +15,24 @@ void Canvas::paintEvent(QPaintEvent* event)
 		}
 		else {
 			painter.drawLine(e->from->circleRect.center(), e->to->circleRect.center());
+
+			if (e->multiplicity > 1) {
+				QPoint center = getCenter(e->from->circleRect.center(), e->to->circleRect.center());
+				QString str = QString::number(e->multiplicity);
+
+				e->mLabel->setText(str);
+				e->mLabel->move(center);
+				e->mLabel->show();
+			}
+			else {
+				e->mLabel->hide();
+			}
 		}
 	}
+}
+
+QPoint Canvas::getCenter(const QPoint& p1, const QPoint& p2) {
+	return QPoint((p1.x() + p2.x()) / 2, (p1.y() + p2.y()) / 2);
 }
 
 void Canvas::mousePressEvent(QMouseEvent* event)
@@ -37,32 +53,41 @@ void Canvas::mousePressEvent(QMouseEvent* event)
 		emit newVertex(event->pos());
 	}
 	else if (currentMode == del) {
-		// iterate over edges
-		for (auto it = edges.begin(); it != edges.end();) {
-			// discover edge containing click
-			if ((*it)->contains(event->pos(), LINE_WIDTH * (*it)->multiplicity)) {
-				int fromIdx = getVertexIdx((*it)->from);
-				int toIdx = getVertexIdx((*it)->to);
-
-				// remove edge from adjacency matrix, degree matrix, and edge vector
-				adjacencyMatrix[fromIdx][toIdx] = 0;
-				adjacencyMatrix[toIdx][fromIdx] = 0;
-
-				degreeMatrix[fromIdx][fromIdx]--;
-				degreeMatrix[toIdx][toIdx]--;
-
-				it = edges.erase(it);
-				this->update();
-				break;
-			}
-			else {
-				++it;
-			}
-		}
+		removeClickedEdge(event->pos());
+		this->update();
 	}
 	else if (currentMode == edge) {
 		setCurrentVertex(nullptr, -1);
 	}
+}
+
+bool Canvas::removeClickedEdge(const QPoint& pos) {
+	// iterate over edges
+	for (auto it = edges.begin(); it != edges.end();) {
+		// discover edge containing click
+		if ((*it)->contains(pos, LINE_WIDTH)) {
+			int fromIdx = getVertexIdx((*it)->from);
+			int toIdx = getVertexIdx((*it)->to);
+
+			// remove edge from adjacency matrix, degree matrix, and edge vector
+			adjacencyMatrix[fromIdx][toIdx] = 0;
+			adjacencyMatrix[toIdx][fromIdx] = 0;
+
+			degreeMatrix[fromIdx][fromIdx]--;
+			degreeMatrix[toIdx][toIdx]--;
+
+			delete (*it);
+			it = edges.erase(it);
+			
+			return true;
+		}
+		else {
+			++it;
+		}
+	}
+
+	// no matching edge found
+	return false;
 }
 
 void Canvas::mouseMoveEvent(QMouseEvent* event)

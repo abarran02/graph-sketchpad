@@ -10,6 +10,7 @@
 #include <QWidget>
 #include <QMouseEvent>
 #include <QPoint>
+#include <QLabel>
 
 class Canvas : public QWidget
 {
@@ -31,11 +32,13 @@ protected:
 	void mouseMoveEvent(QMouseEvent* event) override;
 
 private:
+	QPoint getCenter(const QPoint& p1, const QPoint& p2);
 	int findVertexUnderMouse(const QPoint& pos);
 
 	void setCurrentVertex(Vertex* v, int idx);
 	void setLastVertex(Vertex* v, int idx);
 
+	bool removeClickedEdge(const QPoint& pos);
 	Edge* findMatchingEdge(Vertex* v1, Vertex* v2);
 
 	void removeVectorRowCol(std::vector<std::vector<int>>& matrix, int removeIdx);
