@@ -29,6 +29,17 @@ void Canvas::paintEvent(QPaintEvent* event)
 			}
 		}
 	}
+
+	// update vertex degrees
+	for (int i = 0; i < vertices.size(); i++) {
+		vertices[i]->degree = degreeMatrix[i][i];
+	}
+
+	// display number of edges and vertices
+	QString str;
+	QTextStream stream(&str);
+	stream << "Vertices: " << vertices.size() << "\n" << "Edges: " << edges.size();
+	stats->setText(str);
 }
 
 QPoint Canvas::getCenter(const QPoint& p1, const QPoint& p2) {
@@ -78,7 +89,7 @@ bool Canvas::removeClickedEdge(const QPoint& pos) {
 
 			delete (*it);
 			it = edges.erase(it);
-			
+
 			return true;
 		}
 		else {

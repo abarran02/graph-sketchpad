@@ -6,6 +6,7 @@
 #include "vertex.h"
 
 #include <algorithm>
+#include <iostream>
 #include <QColor>
 #include <QWidget>
 #include <QMouseEvent>
@@ -18,7 +19,12 @@ class Canvas : public QWidget
 
 public:
 	Canvas(QWidget* parent, std::vector<Vertex*>& vertices, std::vector<std::vector<int>>& adjacencyMatrix, std::vector<std::vector<int>>& degreeMatrix)
-		: QWidget(parent), vertices(vertices), adjacencyMatrix(adjacencyMatrix), degreeMatrix(degreeMatrix) {}
+		: QWidget(parent), vertices(vertices), adjacencyMatrix(adjacencyMatrix), degreeMatrix(degreeMatrix)
+	{
+		stats = new QLabel(parent);
+		stats->move(220, 20);
+		stats->show();
+	}
 
 	void paintEvent(QPaintEvent* event) override;
 	void setMode(Mode mode);
@@ -59,6 +65,8 @@ private:
 	std::vector<Edge*> edges;  // tracks edges for mouse interaction
 	std::vector<std::vector<int>>& adjacencyMatrix;
 	std::vector<std::vector<int>>& degreeMatrix;
+
+	QLabel* stats;
 };
 
 #endif
