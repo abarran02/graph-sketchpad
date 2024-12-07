@@ -5,6 +5,7 @@
 #include "mode.h"
 #include "vertex.h"
 
+#include <Eigen/Dense>
 #include <algorithm>
 #include <iostream>
 #include <QColor>
@@ -18,20 +19,20 @@ class Canvas : public QWidget
 	Q_OBJECT
 
 public:
-	Canvas(QWidget* parent, std::vector<Vertex*>& vertices, std::vector<std::vector<int>>& adjacencyMatrix, std::vector<std::vector<int>>& degreeMatrix)
+	Canvas(QWidget* parent, std::vector<Vertex*>& vertices, Eigen::MatrixXd& adjacencyMatrix, Eigen::MatrixXd& degreeMatrix)
 		: QWidget(parent), vertices(vertices), adjacencyMatrix(adjacencyMatrix), degreeMatrix(degreeMatrix)
 	{
-		stats = new QLabel(parent);
-		stats->move(220, 20);
-		stats->show();
 	}
 
 	void paintEvent(QPaintEvent* event) override;
 	void setMode(Mode mode);
 	void setColor(QColor color);
 
+	int getEdgeCount();
+
 signals:
 	void newVertex(const QPoint& pos);
+	void updateStats();
 
 protected:
 	void mousePressEvent(QMouseEvent* event) override;
@@ -39,15 +40,16 @@ protected:
 
 private:
 	QPoint getCenter(const QPoint& p1, const QPoint& p2);
-	int findVertexUnderMouse(const QPoint& pos);
+	void drawEdge(const Edge* e, QPainter& painter);
 
 	void setCurrentVertex(Vertex* v, int idx);
 	void setLastVertex(Vertex* v, int idx);
 
+	int findVertexUnderMouse(const QPoint& pos);
 	bool removeClickedEdge(const QPoint& pos);
 	Edge* findMatchingEdge(Vertex* v1, Vertex* v2);
 
-	void removeVectorRowCol(std::vector<std::vector<int>>& matrix, int removeIdx);
+	void removeMatrixRowCol(Eigen::MatrixXd& matrix, int removeIdx);
 	void handleDeleteVertex(int vertexIdx);
 	void handleVertexAction(int vertexIdx, const QPoint& pos);
 
@@ -61,12 +63,11 @@ private:
 
 	QColor currentColor = Qt::gray;
 	Mode currentMode = basic;
+
 	std::vector<Vertex*>& vertices;
 	std::vector<Edge*> edges;  // tracks edges for mouse interaction
-	std::vector<std::vector<int>>& adjacencyMatrix;
-	std::vector<std::vector<int>>& degreeMatrix;
-
-	QLabel* stats;
+	Eigen::MatrixXd& adjacencyMatrix;
+	Eigen::MatrixXd& degreeMatrix;
 };
 
 #endif

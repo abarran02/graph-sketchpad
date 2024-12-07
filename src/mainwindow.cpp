@@ -1,8 +1,11 @@
 #include "mainwindow.h"
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent),
-	adjacencyMatrix(MAX_VERTICES, std::vector<int>(MAX_VERTICES, 0)), degreeMatrix(MAX_VERTICES, std::vector<int>(MAX_VERTICES, 0))
+adjacencyMatrix(MAX_VERTICES, MAX_VERTICES), degreeMatrix(MAX_VERTICES, MAX_VERTICES)
 {
+	adjacencyMatrix.setZero();
+	degreeMatrix.setZero();
+
 	// Create central widget
 	QWidget* centralWidget = new QWidget(this);
 	setCentralWidget(centralWidget);
@@ -36,6 +39,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent),
 	buttonColumn->setLayout(buttonLayout);
 	buttonColumn->setFixedWidth(200);
 
+	// statistics bottom left corner
+	stats = new QLabel(centralWidget);
+	buttonLayout->addWidget(stats);
+
 	// Main layout
 	QHBoxLayout* mainLayout = new QHBoxLayout(centralWidget);
 	mainLayout->addWidget(buttonColumn);
@@ -49,6 +56,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent),
 
 	resize(1280, 720);
 	connect(canvas, &Canvas::newVertex, this, &MainWindow::handleNewVertex);
+	connect(canvas, &Canvas::updateStats, this, &MainWindow::updateStats);
 }
 
 void MainWindow::resizeEvent(QResizeEvent* event)
@@ -70,6 +78,18 @@ void MainWindow::handleNewVertex(const QPoint& pos)
 
 		vertices.push_back(v);
 	}
+}
+
+void MainWindow::updateStats()
+{
+	// display number of edges and vertices
+	QString str;
+	QTextStream stream(&str);
+	stream << "Vertices: " << vertices.size();
+	stream << "\nEdges: " << canvas->getEdgeCount();
+	stream << "\nComponents: " << getComponentCount();
+
+	stats->setText(str);
 }
 
 void MainWindow::changeMode(int mode) {
@@ -111,4 +131,17 @@ void MainWindow::addColors() {
 	for (const auto& colorItem : colorConstants) {
 		colorBox->addItem(colorItem.name, colorItem.color);
 	}
+}
+
+int MainWindow::getComponentCount() {
+	int size = vertices.size();
+	if (size == 0)
+		return 0;
+
+	Eigen::MatrixXd laplacian = degreeMatrix - adjacencyMatrix;
+	Eigen::MatrixXd subMatrix = laplacian.topLeftCorner(size, size);  // otherwise thinks it is 128x128
+	Eigen::FullPivLU<Eigen::MatrixXd> lu(subMatrix);
+	Eigen::MatrixXd nullSpace = lu.kernel();
+
+	return nullSpace.cols();
 }

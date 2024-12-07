@@ -35,16 +35,22 @@ protected:
 
 private slots:
 	void handleNewVertex(const QPoint& pos);
+	void updateStats();
 
 private:
 	void addModeButton(const QString& text, Mode mode, QButtonGroup* modeGroup, QVBoxLayout* buttonLayout);
 	void addColors();
+
+	int getComponentCount();
+
 	Canvas* canvas;
 	QComboBox* colorBox;
+	QLabel* stats;
 
 	std::vector<Vertex*> vertices;
-	std::vector<std::vector<int>> adjacencyMatrix;
-	std::vector<std::vector<int>> degreeMatrix;
+
+	Eigen::MatrixXd adjacencyMatrix;
+	Eigen::MatrixXd degreeMatrix;
 
 	Mode currentMode = basic;
 };

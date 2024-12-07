@@ -4,46 +4,53 @@ void Canvas::paintEvent(QPaintEvent* event)
 {
 	QPainter painter(this);
 	painter.setRenderHint(QPainter::Antialiasing);
+	painter.setPen(QPen(Qt::red, LINE_WIDTH, Qt::SolidLine, Qt::RoundCap));
 
-	for (Edge* e : edges) {
-		painter.setPen(QPen(Qt::red, LINE_WIDTH, Qt::SolidLine, Qt::RoundCap));
-
-		if (e->from == e->to) {
-			// loop
-			QPoint center(e->to->circleRect.center().x() - HALF_RADIUS, e->to->circleRect.center().y() - HALF_RADIUS);
-			painter.drawEllipse(center, HALF_RADIUS, HALF_RADIUS);
-		}
-		else {
-			painter.drawLine(e->from->circleRect.center(), e->to->circleRect.center());
-
-			if (e->multiplicity > 1) {
-				QPoint center = getCenter(e->from->circleRect.center(), e->to->circleRect.center());
-				QString str = QString::number(e->multiplicity);
-
-				e->mLabel->setText(str);
-				e->mLabel->move(center);
-				e->mLabel->show();
-			}
-			else {
-				e->mLabel->hide();
-			}
-		}
-	}
+	for (Edge* e : edges)
+		drawEdge(e, painter);
 
 	// update vertex degrees
-	for (int i = 0; i < vertices.size(); i++) {
-		vertices[i]->degree = degreeMatrix[i][i];
-	}
+	for (int i = 0; i < vertices.size(); i++)
+		vertices[i]->degree = degreeMatrix(i, i);
 
-	// display number of edges and vertices
-	QString str;
-	QTextStream stream(&str);
-	stream << "Vertices: " << vertices.size() << "\n" << "Edges: " << edges.size();
-	stats->setText(str);
+	emit updateStats();
 }
 
 QPoint Canvas::getCenter(const QPoint& p1, const QPoint& p2) {
 	return QPoint((p1.x() + p2.x()) / 2, (p1.y() + p2.y()) / 2);
+}
+
+int Canvas::getEdgeCount() {
+	int count = 0;
+
+	for (auto it = edges.begin(); it != edges.end(); ++it) {
+		count += (*it)->multiplicity;
+	}
+
+	return count;
+}
+
+void Canvas::drawEdge(const Edge* e, QPainter& painter) {
+	if (e->from == e->to) {
+		// loop
+		QPoint center(e->to->circleRect.center().x() - HALF_RADIUS, e->to->circleRect.center().y() - HALF_RADIUS);
+		painter.drawEllipse(center, HALF_RADIUS, HALF_RADIUS);
+	}
+	else {
+		painter.drawLine(e->from->circleRect.center(), e->to->circleRect.center());
+
+		if (e->multiplicity > 1) {
+			QPoint center = getCenter(e->from->circleRect.center(), e->to->circleRect.center());
+			QString str = QString::number(e->multiplicity);
+
+			e->mLabel->setText(str);
+			e->mLabel->move(center);
+			e->mLabel->show();
+		}
+		else {
+			e->mLabel->hide();
+		}
+	}
 }
 
 void Canvas::mousePressEvent(QMouseEvent* event)
@@ -81,11 +88,11 @@ bool Canvas::removeClickedEdge(const QPoint& pos) {
 			int toIdx = getVertexIdx((*it)->to);
 
 			// remove edge from adjacency matrix, degree matrix, and edge vector
-			adjacencyMatrix[fromIdx][toIdx] = 0;
-			adjacencyMatrix[toIdx][fromIdx] = 0;
+			adjacencyMatrix(fromIdx, toIdx) = 0;
+			adjacencyMatrix(toIdx, fromIdx) = 0;
 
-			degreeMatrix[fromIdx][fromIdx]--;
-			degreeMatrix[toIdx][toIdx]--;
+			degreeMatrix(fromIdx, fromIdx)--;
+			degreeMatrix(toIdx, toIdx)--;
 
 			delete (*it);
 			it = edges.erase(it);
@@ -151,22 +158,27 @@ void Canvas::setColor(QColor color) {
 	currentColor = color;
 }
 
-void Canvas::removeVectorRowCol(std::vector<std::vector<int>>& matrix, int removeIdx) {
+void Canvas::removeMatrixRowCol(Eigen::MatrixXd& matrix, int removeIdx) {
+	int rows = matrix.rows();
+	int cols = matrix.cols();
+
 	// shift rows up
-	for (int i = removeIdx; i < matrix.size() - 1; ++i) {
-		matrix[i] = matrix[i + 1];
+	if (removeIdx < rows - 1) {
+		matrix.block(removeIdx, 0, rows - removeIdx - 1, cols) =
+			matrix.block(removeIdx + 1, 0, rows - removeIdx - 1, cols);
 	}
 
-	// maintain matrix size at MAX_VERTICES
-	matrix.back() = std::vector<int>(matrix.size(), 0);
+	// set the last row to zero
+	matrix.row(rows - 1).setZero();
 
 	// shift columns left
-	for (auto& row : matrix) {
-		for (int j = removeIdx; j < row.size() - 1; ++j) {
-			row[j] = row[j + 1];
-		}
-		row.back() = 0;  // set the last column to zero
+	if (removeIdx < cols - 1) {
+		matrix.block(0, removeIdx, rows, cols - removeIdx - 1) =
+			matrix.block(0, removeIdx + 1, rows, cols - removeIdx - 1);
 	}
+
+	// set the last column to zero
+	matrix.col(cols - 1).setZero();
 }
 
 void Canvas::handleDeleteVertex(int vertexIdx)
@@ -175,12 +187,14 @@ void Canvas::handleDeleteVertex(int vertexIdx)
 	for (auto it = edges.begin(); it != edges.end();) {
 		if ((*it)->from == vertices[vertexIdx]) {
 			int adjIdx = getVertexIdx((*it)->to);
-			degreeMatrix[adjIdx][adjIdx]--;  // decrement degrees of adjacent edges
+			degreeMatrix(adjIdx, adjIdx)--;  // decrement degrees of adjacent edges
+			delete (*it);
 			it = edges.erase(it);
 		}
 		else if ((*it)->to == vertices[vertexIdx]) {
 			int adjIdx = getVertexIdx((*it)->from);
-			degreeMatrix[adjIdx][adjIdx]--;
+			degreeMatrix(adjIdx, adjIdx)--;
+			delete (*it);
 			it = edges.erase(it);
 		}
 		else {
@@ -189,8 +203,8 @@ void Canvas::handleDeleteVertex(int vertexIdx)
 	}
 
 	// remove vertex from adjacency and degree matrices
-	removeVectorRowCol(adjacencyMatrix, vertexIdx);
-	removeVectorRowCol(degreeMatrix, vertexIdx);
+	removeMatrixRowCol(adjacencyMatrix, vertexIdx);
+	removeMatrixRowCol(degreeMatrix, vertexIdx);
 
 	// delete vertex and remove from vertices vector
 	if (vertices[vertexIdx]->highlighted)  // was the current vertex
@@ -218,23 +232,23 @@ void Canvas::handleVertexAction(int vertexIdx, const QPoint& pos)
 		Edge* e;
 
 		// parallel edge
-		if (adjacencyMatrix[lastVertexIdx][currentVertexIdx] == 1) {
+		if (adjacencyMatrix(lastVertexIdx, currentVertexIdx) == 1) {
 			e = findMatchingEdge(currentVertex, lastVertex);
 			e->multiplicity++;
 		}
 		// new edge
 		else {
-			adjacencyMatrix[lastVertexIdx][currentVertexIdx] = 1;
-			adjacencyMatrix[currentVertexIdx][lastVertexIdx] = 1;
+			adjacencyMatrix(lastVertexIdx, currentVertexIdx) = 1;
+			adjacencyMatrix(currentVertexIdx, lastVertexIdx) = 1;
 
 			e = new Edge(this, lastVertex, currentVertex);
 			edges.push_back(e);
 		}
 
 		// increment degree of both vertices
-		degreeMatrix[currentVertexIdx][currentVertexIdx]++;
+		degreeMatrix(currentVertexIdx, currentVertexIdx)++;
 		if (currentVertexIdx != lastVertexIdx)  // prevent incrementing by 2 for loops
-			degreeMatrix[lastVertexIdx][lastVertexIdx]++;
+			degreeMatrix(lastVertexIdx, lastVertexIdx)++;
 
 		setLastVertex(nullptr, -1);
 		setCurrentVertex(nullptr, -1);
