@@ -5,6 +5,7 @@
 #include "canvas.h"
 #include "mode.h"
 
+#include <Eigen/Dense>
 #include <vector>
 #include <QColor>
 #include <QComboBox>
