@@ -4,7 +4,6 @@ void Canvas::paintEvent(QPaintEvent* event)
 {
 	QPainter painter(this);
 	painter.setRenderHint(QPainter::Antialiasing);
-	painter.setPen(QPen(Qt::red, LINE_WIDTH, Qt::SolidLine, Qt::RoundCap));
 
 	for (Edge* e : edges)
 		drawEdge(e, painter);
@@ -12,8 +11,6 @@ void Canvas::paintEvent(QPaintEvent* event)
 	// update vertex degrees
 	for (int i = 0; i < vertices.size(); i++)
 		vertices[i]->degree = degreeMatrix(i, i);
-
-	emit updateStats();
 }
 
 QPoint Canvas::getCenter(const QPoint& p1, const QPoint& p2) {
@@ -30,7 +27,39 @@ int Canvas::getEdgeCount() {
 	return count;
 }
 
+int Canvas::getComponentCount(Eigen::MatrixXd& adjMat, Eigen::MatrixXd& degMat) {
+	int size = vertices.size();
+	if (size == 0)
+		return 0;
+
+	Eigen::MatrixXd laplacian = adjMat - degMat;
+	Eigen::MatrixXd subMatrix = laplacian.topLeftCorner(size, size);  // otherwise thinks it is 128x128
+	Eigen::FullPivLU<Eigen::MatrixXd> lu(subMatrix);
+	Eigen::MatrixXd nullSpace = lu.kernel();
+
+	return nullSpace.cols();
+}
+
 void Canvas::drawEdge(const Edge* e, QPainter& painter) {
+	int fromIdx = getVertexIdx(e->from);
+	int toIdx = getVertexIdx(e->to);
+
+	// copy matrices to prevent modifying original
+	Eigen::MatrixXd bridgeAdjCheck = adjacencyMatrix;
+	Eigen::MatrixXd bridgeDegCheck = degreeMatrix;
+
+	// remove edge from copies to check if removal would increase components
+	bridgeAdjCheck(fromIdx, toIdx) = 0;
+	bridgeAdjCheck(toIdx, fromIdx) = 0;
+	bridgeDegCheck(fromIdx, fromIdx) -= e->multiplicity;
+	bridgeDegCheck(toIdx, toIdx) -= e->multiplicity;
+
+	// compare component counts
+	QColor color = Qt::red;
+	if (getComponentCount(bridgeAdjCheck, bridgeDegCheck) != getComponentCount(adjacencyMatrix, degreeMatrix))
+		color = Qt::blue;
+	painter.setPen(QPen(color, LINE_WIDTH, Qt::SolidLine, Qt::RoundCap));
+
 	if (e->from == e->to) {
 		// loop
 		QPoint center(e->to->circleRect.center().x() - HALF_RADIUS, e->to->circleRect.center().y() - HALF_RADIUS);
@@ -77,6 +106,8 @@ void Canvas::mousePressEvent(QMouseEvent* event)
 	else if (currentMode == edge) {
 		setCurrentVertex(nullptr, -1);
 	}
+
+	emit updateStats();
 }
 
 bool Canvas::removeClickedEdge(const QPoint& pos) {

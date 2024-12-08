@@ -29,6 +29,7 @@ public:
 	void setColor(QColor color);
 
 	int getEdgeCount();
+	int getComponentCount(Eigen::MatrixXd& adjMat, Eigen::MatrixXd& degMat);
 
 signals:
 	void newVertex(const QPoint& pos);

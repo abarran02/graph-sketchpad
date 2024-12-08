@@ -87,7 +87,7 @@ void MainWindow::updateStats()
 	QTextStream stream(&str);
 	stream << "Vertices: " << vertices.size();
 	stream << "\nEdges: " << canvas->getEdgeCount();
-	stream << "\nComponents: " << getComponentCount();
+	stream << "\nComponents: " << canvas->getComponentCount(adjacencyMatrix, degreeMatrix);
 
 	stats->setText(str);
 }
@@ -131,17 +131,4 @@ void MainWindow::addColors() {
 	for (const auto& colorItem : colorConstants) {
 		colorBox->addItem(colorItem.name, colorItem.color);
 	}
-}
-
-int MainWindow::getComponentCount() {
-	int size = vertices.size();
-	if (size == 0)
-		return 0;
-
-	Eigen::MatrixXd laplacian = degreeMatrix - adjacencyMatrix;
-	Eigen::MatrixXd subMatrix = laplacian.topLeftCorner(size, size);  // otherwise thinks it is 128x128
-	Eigen::FullPivLU<Eigen::MatrixXd> lu(subMatrix);
-	Eigen::MatrixXd nullSpace = lu.kernel();
-
-	return nullSpace.cols();
 }

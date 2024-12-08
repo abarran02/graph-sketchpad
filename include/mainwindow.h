@@ -41,8 +41,6 @@ private:
 	void addModeButton(const QString& text, Mode mode, QButtonGroup* modeGroup, QVBoxLayout* buttonLayout);
 	void addColors();
 
-	int getComponentCount();
-
 	Canvas* canvas;
 	QComboBox* colorBox;
 	QLabel* stats;
