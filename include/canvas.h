@@ -22,6 +22,8 @@ public:
 	Canvas(QWidget* parent, std::vector<Vertex*>& vertices, Eigen::MatrixXd& adjacencyMatrix, Eigen::MatrixXd& degreeMatrix)
 		: QWidget(parent), vertices(vertices), adjacencyMatrix(adjacencyMatrix), degreeMatrix(degreeMatrix)
 	{
+		adjMatLabel = new QLabel(this);
+		adjMatLabel->show();
 	}
 
 	void paintEvent(QPaintEvent* event) override;
@@ -30,6 +32,8 @@ public:
 
 	int getEdgeCount();
 	int getComponentCount(Eigen::MatrixXd& adjMat, Eigen::MatrixXd& degMat);
+
+	QLabel* adjMatLabel;
 
 signals:
 	void newVertex(const QPoint& pos);
@@ -40,6 +44,7 @@ protected:
 	void mouseMoveEvent(QMouseEvent* event) override;
 
 private:
+	void updateAdjMatLabel();
 	QPoint getCenter(const QPoint& p1, const QPoint& p2);
 	void drawEdge(const Edge* e, QPainter& painter);
 

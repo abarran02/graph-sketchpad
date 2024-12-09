@@ -13,6 +13,27 @@ void Canvas::paintEvent(QPaintEvent* event)
 		vertices[i]->degree = degreeMatrix(i, i);
 }
 
+void Canvas::updateAdjMatLabel() {
+	std::stringstream ss;
+	int size = vertices.size();
+	if (size == 0) {
+		adjMatLabel->setText("");
+		return;
+	}
+
+	Eigen::MatrixXd subMatrix = adjacencyMatrix.topLeftCorner(size, size);
+
+	for (int i = 0; i < subMatrix.rows(); ++i) {
+		for (int j = 0; j < subMatrix.cols(); ++j) {
+			ss << subMatrix(i, j) << " ";
+		}
+		ss << "\n";
+	}
+
+	adjMatLabel->setText(QString::fromStdString(ss.str()));
+	adjMatLabel->adjustSize();
+}
+
 QPoint Canvas::getCenter(const QPoint& p1, const QPoint& p2) {
 	return QPoint((p1.x() + p2.x()) / 2, (p1.y() + p2.y()) / 2);
 }
@@ -41,24 +62,7 @@ int Canvas::getComponentCount(Eigen::MatrixXd& adjMat, Eigen::MatrixXd& degMat) 
 }
 
 void Canvas::drawEdge(const Edge* e, QPainter& painter) {
-	int fromIdx = getVertexIdx(e->from);
-	int toIdx = getVertexIdx(e->to);
-
-	// copy matrices to prevent modifying original
-	Eigen::MatrixXd bridgeAdjCheck = adjacencyMatrix;
-	Eigen::MatrixXd bridgeDegCheck = degreeMatrix;
-
-	// remove edge from copies to check if removal would increase components
-	bridgeAdjCheck(fromIdx, toIdx) = 0;
-	bridgeAdjCheck(toIdx, fromIdx) = 0;
-	bridgeDegCheck(fromIdx, fromIdx) -= e->multiplicity;
-	bridgeDegCheck(toIdx, toIdx) -= e->multiplicity;
-
-	// compare component counts
-	QColor color = Qt::red;
-	if (getComponentCount(bridgeAdjCheck, bridgeDegCheck) != getComponentCount(adjacencyMatrix, degreeMatrix))
-		color = Qt::blue;
-	painter.setPen(QPen(color, LINE_WIDTH, Qt::SolidLine, Qt::RoundCap));
+	painter.setPen(QPen(e->bridge ? Qt::blue : Qt::red, LINE_WIDTH, Qt::SolidLine, Qt::RoundCap));
 
 	if (e->from == e->to) {
 		// loop
@@ -106,6 +110,27 @@ void Canvas::mousePressEvent(QMouseEvent* event)
 	else if (currentMode == edge) {
 		setCurrentVertex(nullptr, -1);
 	}
+
+	// determine whether each edge is a bridge
+	for (Edge* e : edges) {
+		int fromIdx = getVertexIdx(e->from);
+		int toIdx = getVertexIdx(e->to);
+
+		// copy matrices to prevent modifying original
+		Eigen::MatrixXd bridgeAdjCheck = adjacencyMatrix;
+		Eigen::MatrixXd bridgeDegCheck = degreeMatrix;
+
+		// remove edge from copies to check if removal would increase components
+		bridgeAdjCheck(fromIdx, toIdx) = 0;
+		bridgeAdjCheck(toIdx, fromIdx) = 0;
+		bridgeDegCheck(fromIdx, fromIdx) -= e->multiplicity;
+		bridgeDegCheck(toIdx, toIdx) -= e->multiplicity;
+
+		// compare component counts
+		e->bridge = getComponentCount(bridgeAdjCheck, bridgeDegCheck) != getComponentCount(adjacencyMatrix, degreeMatrix);
+	}
+
+	updateAdjMatLabel();
 
 	emit updateStats();
 }

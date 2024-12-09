@@ -31,6 +31,7 @@ public:
 
 	int multiplicity = 1;
 	QLabel* mLabel;
+	bool bridge;
 
 private:
 	bool checkContainedLine(const QPoint& point, const double width);
